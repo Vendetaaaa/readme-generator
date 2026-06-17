@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>README generator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#070d0a;--surface:rgba(10,18,12,0.88);--border:#1a2e20;
+  --accent:#22c55e;--accent-glow:rgba(34,197,94,0.15);
+  --accent-2:#4ade80;--accent-dim:#15803d;
+  --text:#e2f0e8;--text-muted:#4a6b55;--text-dim:#7a9e85;
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;
+}
+
+/* root */
+html,body{height:100%;font-family:var(--sans);font-size:14px;line-height:1.6;background:var(--bg);color:var(--text);overflow:hidden}
+canvas#bg{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+
+/* desktop view */
+.app{position:relative;z-index:1;display:grid;grid-template-columns:390px 1fr;height:100vh}
+.left{background:var(--surface);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-right:1px solid rgba(26,46,32,0.6);overflow-y:auto;display:flex;flex-direction:column;height:100vh}
+.right{display:flex;flex-direction:column;background:rgba(7,13,10,0.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);height:100vh;overflow:hidden}
+
+/* MBT (desk. nuh uh) */
+.mob-tabs{display:none}
+
+/* logo */
+.logo-bar{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;position:sticky;top:0;background:rgba(10,18,12,0.97);backdrop-filter:blur(18px);z-index:20}
+.logo-icon{width:28px;height:28px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:10px;color:#022c0e;flex-shrink:0}
+.logo-name{font-family:var(--mono);font-weight:600;font-size:13px;color:var(--text)}
+.logo-name em{color:var(--accent);font-style:normal}
+.logo-badge{margin-left:auto;font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:3px;background:rgba(34,197,94,0.08);color:var(--text-dim);border:1px solid var(--border);letter-spacing:0.08em;text-transform:uppercase;white-space:nowrap}
+
+/* sections */
+.sections{padding:16px 18px;display:flex;flex-direction:column;gap:20px}
+.sec-head{font-family:var(--mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);display:flex;align-items:center;gap:7px;margin-bottom:10px}
+.sec-head::after{content:'';flex:1;height:1px;background:var(--border)}
+.sec-num{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:3px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.25);font-size:8px;font-weight:700;color:var(--accent);flex-shrink:0}
+
+/* fields */
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:11px;font-weight:500;color:var(--text-dim)}
+.badge-label{font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(34,197,94,0.1);color:var(--accent-dim);border:1px solid rgba(34,197,94,0.2);margin-left:4px;letter-spacing:0.05em;text-transform:uppercase;font-family:var(--mono)}
+.field input,.field textarea,.field select{background:rgba(14,24,16,0.7);border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;transition:border-color 0.15s,box-shadow 0.15s;resize:none;width:100%;min-height:44px}
+.field textarea{min-height:unset}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.field input::placeholder,.field textarea::placeholder{color:var(--text-muted);font-style:italic}
+.field select option{background:#0d1f11;color:var(--text)}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cond{margin-top:6px;padding-left:10px;border-left:2px solid var(--border);display:flex;flex-direction:column;gap:8px;transition:opacity 0.2s}
+.cond.off{opacity:0.2;pointer-events:none}
+
+/* skills */
+.skill-wrap{display:flex;flex-direction:column;gap:8px}
+.skill-row{display:flex;gap:6px}
+.skill-row input{flex:1;background:rgba(14,24,16,0.7);border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;transition:border-color 0.15s,box-shadow 0.15s;min-height:44px}
+.skill-row input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.skill-row input::placeholder{color:var(--text-muted);font-style:italic}
+.add-btn{background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);border-radius:6px;padding:10px 16px;color:var(--accent);font-family:var(--mono);font-size:16px;cursor:pointer;transition:all 0.15s;min-height:44px;min-width:44px}
+.add-btn:hover{background:var(--accent);color:#022c0e}
+.tags{display:flex;flex-wrap:wrap;gap:5px;min-height:20px}
+.tag{display:inline-flex;align-items:center;gap:4px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:4px;padding:4px 10px;font-family:var(--mono);font-size:10px;color:var(--accent-2)}
+.tag button{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:15px;padding:2px 0 2px 4px;line-height:1;transition:color 0.1s;min-width:24px;min-height:24px;display:flex;align-items:center;justify-content:center}
+.tag button:hover{color:#f87171}
+
+/* toggle */
+.toggle-row{display:flex;gap:6px;flex-wrap:wrap}
+.tog{background:rgba(14,24,16,0.7);border:1px solid var(--border);border-radius:5px;padding:8px 12px;font-family:var(--mono);font-size:10px;color:var(--text-dim);cursor:pointer;transition:all 0.15s;user-select:none;min-height:36px;display:flex;align-items:center}
+.tog:hover{border-color:var(--text-muted)}
+.tog.on{background:rgba(34,197,94,0.12);border-color:rgba(34,197,94,0.4);color:var(--accent)}
+
+/* right */
+.rh{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:8px;flex-wrap:wrap}
+.rh-title{font-family:var(--mono);font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;display:flex;align-items:center;gap:7px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.rh-actions{display:flex;gap:8px;flex-wrap:wrap}
+.action-btn{font-family:var(--mono);font-size:10px;font-weight:600;padding:7px 14px;border-radius:5px;border:1px solid rgba(34,197,94,0.4);background:rgba(34,197,94,0.1);color:var(--accent);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all 0.15s;white-space:nowrap;min-height:36px}
+.action-btn:hover{background:var(--accent);color:#022c0e}
+.action-btn.ok{border-color:var(--accent-2);color:#022c0e;background:var(--accent-2)}
+.action-btn.sec{border-color:var(--border);background:transparent;color:var(--text-dim)}
+.action-btn.sec:hover{border-color:var(--accent);color:var(--accent);background:rgba(34,197,94,0.08)}
+.action-btn.active-view{border-color:rgba(34,197,94,0.4);color:var(--accent);background:rgba(34,197,94,0.12)}
+#copy-btn{background:var(--accent);color:#022c0e;border-color:var(--accent);font-size:11px;padding:8px 20px;border-radius:6px;font-weight:700;letter-spacing:0.04em;box-shadow:0 0 18px rgba(34,197,94,0.35)}
+#copy-btn:hover{background:#16a34a;border-color:#16a34a;box-shadow:0 0 28px rgba(34,197,94,0.55)}
+#copy-btn.ok{background:var(--accent-2);border-color:var(--accent-2);color:#022c0e;box-shadow:0 0 22px rgba(74,222,128,0.45)}
+
+/* left (preview) */
+.preview-area{flex:1;padding:18px 22px;overflow-y:auto;min-height:0}
+pre#output{font-family:var(--mono);font-size:12px;line-height:1.9;color:var(--text-dim);white-space:pre-wrap;word-break:break-word}
+.rendered-area{flex:1;padding:18px 22px;overflow-y:auto;display:none;min-height:0}
+#rendered{font-size:14px;line-height:1.75;color:var(--text)}
+#rendered h1,#rendered h2,#rendered h3{color:var(--accent-2);font-family:var(--mono);margin:1.2em 0 0.5em}
+#rendered h1{font-size:20px}#rendered h2{font-size:16px}#rendered h3{font-size:14px}
+#rendered p{margin-bottom:0.8em;color:var(--text-dim)}
+#rendered code{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);padding:1px 6px;border-radius:3px;font-family:var(--mono);font-size:11px;color:var(--accent-2)}
+#rendered blockquote{border-left:3px solid var(--accent);padding-left:12px;color:var(--text-muted);margin:0.8em 0;font-style:italic}
+#rendered hr{border:none;border-top:1px solid var(--border);margin:1.2em 0}
+#rendered img{max-width:100%;border-radius:6px;margin:8px 0;display:block}
+#rendered a{color:var(--accent);text-decoration:none}
+#rendered a:hover{text-decoration:underline}
+#rendered strong{color:var(--text);font-weight:600}
+#rendered em{color:#86efac}
+
+/* syntax */
+.mh{color:#86efac;font-weight:600}.mc{color:var(--accent)}.mb{color:var(--text);font-weight:600}.ml{color:#a78bfa}.mq{color:var(--text-muted)}.mhr{color:var(--border)}.mimg{color:#f9a8d4}
+
+/* jail no no */
+.legal-bar{flex-shrink:0;padding:8px 16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--text-muted);background:rgba(7,13,10,0.6);gap:10px;flex-wrap:wrap}
+.legal-links{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.legal-link{color:var(--text-muted);transition:color 0.15s;cursor:pointer;padding:2px 0}
+.legal-link:hover{color:var(--accent)}
+.legal-sep{color:var(--border)}
+
+/* legal no no v2 */
+#legal-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:99999;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:16px}
+#legal-modal.open{display:flex}
+#legal-modal-box{background:#0c1a0f;border:1px solid rgba(34,197,94,0.25);border-radius:10px;width:min(560px,100%);max-height:85vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 0 60px rgba(0,0,0,0.6)}
+#modal-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#modal-title{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em}
+#modal-close{background:none;border:none;color:var(--text-muted);font-size:22px;line-height:1;cursor:pointer;padding:4px 8px;transition:color 0.15s;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center}
+#modal-close:hover{color:var(--text)}
+#modal-body{padding:18px 20px;overflow-y:auto;font-size:13px;line-height:1.75;color:var(--text-dim);font-family:var(--sans)}
+#modal-body h3{font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin:1.2em 0 0.4em}
+#modal-body h3:first-child{margin-top:0}
+#modal-body p{margin-bottom:0.75em}
+#modal-body a{color:var(--accent);text-decoration:none}
+#modal-body a:hover{text-decoration:underline}
+#modal-body ul{padding-left:1.2em;margin-bottom:0.75em}
+#modal-body ul li{margin-bottom:0.3em}
+
+/* scroll */
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#1a3322;border-radius:2px}
+
+/* custom pointer */
+@media(pointer:fine){
+  *{cursor:none!important}
+  #cursor-ring{position:fixed;top:0;left:0;width:36px;height:36px;border:1.5px solid rgba(34,197,94,0.7);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width 0.2s,height 0.2s,border-color 0.2s,background 0.2s;mix-blend-mode:screen}
+  #cursor-dot{position:fixed;top:0;left:0;width:5px;height:5px;background:var(--accent);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:transform 0.1s,background 0.15s}
+  #cursor-trail{position:fixed;top:0;left:0;pointer-events:none;z-index:9998}
+  .cursor-hover #cursor-ring{width:52px;height:52px;border-color:rgba(74,222,128,0.9);background:rgba(34,197,94,0.06)}
+  .cursor-hover #cursor-dot{transform:translate(-50%,-50%) scale(0)}
+  .cursor-click #cursor-ring{width:22px;height:22px;border-color:#4ade80}
+  .cursor-click #cursor-dot{background:#4ade80;transform:translate(-50%,-50%) scale(2)}
+}
+@media(pointer:coarse){
+  #cursor-ring,#cursor-dot,#cursor-trail{display:none}
+}
+
+/* tablet */
+@media(max-width:900px) and (min-width:641px){
+  .app{grid-template-columns:320px 1fr}
+  .logo-badge{display:none}
+}
+
+/* phone */
+@media(max-width:640px){
+  html,body{overflow:auto;height:auto}
+  .app{display:flex;flex-direction:column;height:auto;min-height:100vh}
+  .left{height:auto;overflow:visible;border-right:none;border-bottom:1px solid var(--border)}
+  .right{height:auto;flex:none}
+  .preview-area,.rendered-area{max-height:60vh;overflow-y:auto}
+
+  /* switcher */
+  .mob-tabs{display:flex;flex-shrink:0;border-bottom:1px solid var(--border);background:rgba(10,18,12,0.97);position:sticky;top:0;z-index:30}
+  .mob-tab{flex:1;padding:12px 8px;font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);text-align:center;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;user-select:none}
+  .mob-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+  /* phone no logo */
+  .logo-bar{position:static}
+
+  /* left-right no phone */
+  .left.mob-hidden{display:none}
+  .right.mob-hidden{display:none}
+
+  .row-2{grid-template-columns:1fr}
+  .sections{padding:14px 14px}
+  .logo-badge{display:none}
+  .rh{flex-wrap:wrap;gap:6px}
+  .rh-title{width:100%}
+  .rh-actions{width:100%;justify-content:flex-end}
+  #copy-btn{flex:1;justify-content:center}
+  .legal-bar{flex-direction:column;align-items:flex-start;gap:6px}
+  .legal-links{flex-wrap:wrap;gap:8px}
+  .legal-sep{display:none}
+}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div id="cursor-ring"></div>
+<div id="cursor-dot"></div>
+<canvas id="cursor-trail"></canvas>
+<div class="app">
+  <div class="left">
+    <div class="logo-bar">
+      <div class="logo-icon">G/</div>
+      <div class="logo-name">Githi<em>pedia</em></div>
+      <span class="logo-badge">README Wizard</span>
+    </div>
+    <div class="sections">
+      <div>
+        <div class="sec-head"><span class="sec-num">1</span> Header</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="field"><label>GitHub Username</label><input id="username" placeholder="e.g. octocat" /></div>
+          <div class="field"><label>Banner Headline</label><input id="banner" placeholder="e.g. Building things that matter." /></div>
+          <div class="field"><label>Subtitle / Role</label><input id="subtitle" placeholder="e.g. Full-stack dev & open-source enthusiast" /></div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-head"><span class="sec-num">2</span> About</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="field"><label>Short Bio</label><textarea id="bio" rows="3" placeholder="Who you are and what you work on."></textarea></div>
+          <div class="cond off" id="quote-block">
+            <div class="field"><label>Favorite Quote <span class="badge-label">if bio filled</span></label><input id="quote" placeholder='"The best code is no code at all."' /></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-head"><span class="sec-num">3</span> Milestones</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="field"><label>Core Achievement <span class="badge-label">optional</span></label><input id="milestone" placeholder="e.g. AWS Certified Solutions Architect" /></div>
+          <div class="cond off" id="milestone-block">
+            <div class="row-2">
+              <div class="field"><label>Verify URL</label><input type="url" id="mlink" placeholder="https://..." /></div>
+              <div class="field"><label>Badge Image URL</label><input type="url" id="mimg" placeholder="https://..." /></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-head"><span class="sec-num">4</span> Goals</div>
+        <div class="field"><label>Currently Exploring / Building</label><textarea id="goals" rows="2" placeholder="e.g. Distributed systems and WebAssembly runtimes."></textarea></div>
+      </div>
+      <div>
+        <div class="sec-head"><span class="sec-num">5</span> Tech Stack</div>
+        <div class="skill-wrap">
+          <div class="skill-row"><input id="skill-input" placeholder="Type a skill, press Enter or +" /><button class="add-btn" id="add-btn">+</button></div>
+          <div class="tags" id="tags"></div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-head"><span class="sec-num">6</span> Socials & Links</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="row-2">
+            <div class="field"><label>Twitter / X</label><input id="twitter" placeholder="@handle" /></div>
+            <div class="field"><label>LinkedIn</label><input id="linkedin" placeholder="linkedin.com/in/you" /></div>
+          </div>
+          <div class="field"><label>Personal Website</label><input id="website" placeholder="https://yourdomain.com" /></div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-head"><span class="sec-num">7</span> Extras</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div class="field">
+            <label>Include sections</label>
+            <div class="toggle-row" id="extras-row">
+              <div class="tog on" data-key="stats">GitHub Stats</div>
+              <div class="tog on" data-key="streak">Streak</div>
+              <div class="tog on" data-key="langs">Top Languages</div>
+              <div class="tog" data-key="trophy">Trophies</div>
+              <div class="tog" data-key="views">Profile Views</div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Stats Theme</label>
+            <select id="stats-theme">
+              <option value="chartreuse-dark">Chartreuse Dark (green)</option>
+              <option value="radical">Radical</option>
+              <option value="tokyonight">Tokyo Night</option>
+              <option value="dracula">Dracula</option>
+              <option value="merko">Merko</option>
+              <option value="gruvbox">Gruvbox</option>
+              <option value="github_dark">GitHub Dark</option>
+              <option value="algolia">Algolia</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div style="padding-bottom:8px">
+        <div class="sec-head"><span class="sec-num">8</span> Footer</div>
+        <div class="field"><label>Sign-off Line</label><input id="footer" placeholder="e.g. Thanks for stopping by. Let's build something great." /></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="rh">
+      <div class="rh-title"><span class="live-dot"></span> Live Preview</div>
+      <div class="rh-actions">
+        <button class="action-btn sec" id="toggle-render-btn">⬡ Rendered</button>
+        <button class="action-btn" id="copy-btn">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H6z"/><path d="M2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1H2z"/></svg>
+          Copy Markdown
+        </button>
+      </div>
+    </div>
+    <div class="preview-area"><pre id="output"></pre></div>
+    <div class="rendered-area" id="rendered-area"><div id="rendered"></div></div>
+    <div class="legal-bar">
+      <span>© 2025 Githipedia. Free & open-source.</span>
+      <div class="legal-links">
+        <span class="legal-link" onclick="openModal('tos')">Terms of Service</span>
+        <span class="legal-sep">·</span>
+        <span class="legal-link" onclick="openModal('privacy')">Privacy Policy</span>
+        <span class="legal-sep">·</span>
+        <span class="legal-link" onclick="openModal('licenses')">Licenses</span>
+        <span class="legal-sep">·</span>
+        <span class="legal-link" onclick="openModal('about')">About</span>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="legal-modal" onclick="if(event.target===this)closeModal()">
+  <div id="legal-modal-box">
+    <div id="modal-header">
+      <span id="modal-title">Terms of Service</span>
+      <button id="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// webgl animation - credits: reactbits.com
+const canvas = document.getElementById('bg');
+const gl = canvas.getContext('webgl');
+
+function resize(){
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  if(gl) gl.viewport(0,0,canvas.width,canvas.height);
+}
+resize();
+window.addEventListener('resize', resize);
+
+const vsSrc = `attribute vec2 pos;void main(){gl_Position=vec4(pos,0.0,1.0);}`;
+const fsSrc = `
+precision highp float;
+uniform vec2 res;uniform float time;uniform vec2 mouse;
+vec4 mod289(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}
+vec4 perm(vec4 x){return mod289(((x*34.0)+1.0)*x);}
+vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-0.85373472095314*r;}
+vec2 fade(vec2 t){return t*t*t*(t*(t*6.0-15.0)+10.0);}
+float cnoise(vec2 P){
+  vec4 Pi=floor(P.xyxy)+vec4(0,0,1,1);vec4 Pf=fract(P.xyxy)-vec4(0,0,1,1);
+  Pi=mod289(Pi);vec4 ix=Pi.xzxz,iy=Pi.yyww,fx=Pf.xzxz,fy=Pf.yyww;
+  vec4 i=perm(perm(ix)+iy);vec4 gx=fract(i*(1.0/41.0))*2.0-1.0;
+  vec4 gy=abs(gx)-0.5;vec4 tx=floor(gx+0.5);gx=gx-tx;
+  vec2 g00=vec2(gx.x,gy.x),g10=vec2(gx.y,gy.y),g01=vec2(gx.z,gy.z),g11=vec2(gx.w,gy.w);
+  vec4 norm=taylorInvSqrt(vec4(dot(g00,g00),dot(g01,g01),dot(g10,g10),dot(g11,g11)));
+  g00*=norm.x;g01*=norm.y;g10*=norm.z;g11*=norm.w;
+  vec2 fxy=fade(Pf.xy);
+  vec2 nx=mix(vec2(dot(g00,vec2(fx.x,fy.x)),dot(g01,vec2(fx.z,fy.z))),vec2(dot(g10,vec2(fx.y,fy.y)),dot(g11,vec2(fx.w,fy.w))),fxy.x);
+  return 2.3*mix(nx.x,nx.y,fxy.y);
+}
+float fbm(vec2 p){float v=0.0,a=1.0;for(int i=0;i<4;i++){v+=a*abs(cnoise(p));p*=3.0;a*=0.3;}return v;}
+float pattern(vec2 p){vec2 q=p-time*0.04;return fbm(p+fbm(q));}
+void main(){
+  vec2 uv=gl_FragCoord.xy/res;uv-=0.5;uv.x*=res.x/res.y;
+  float f=pattern(uv);
+  vec2 mn=(mouse/res-0.5)*vec2(1.0,-1.0);mn.x*=res.x/res.y;
+  float dist=length(uv-mn);float eff=1.0-smoothstep(0.0,0.35,dist);f-=0.35*eff;
+  // Green palette: dark forest greens
+  vec3 dark=vec3(0.027,0.051,0.035);
+  vec3 mid=vec3(0.04,0.22,0.09);
+  vec3 bright=vec3(0.13,0.77,0.37);
+  vec3 col=mix(dark,mix(mid,bright,clamp(f*1.4,0.0,1.0)),clamp(f*1.8,0.0,1.0));
+  // Ordered dithering 4x4
+  vec2 sc=floor(gl_FragCoord.xy/2.0);
+  int x=int(mod(sc.x,4.0)),y=int(mod(sc.y,4.0));
+  float thr=0.0;
+  if(y==0){if(x==0)thr=0.0625;else if(x==1)thr=0.5625;else if(x==2)thr=0.1875;else thr=0.6875;}
+  else if(y==1){if(x==0)thr=0.8125;else if(x==1)thr=0.3125;else if(x==2)thr=0.9375;else thr=0.4375;}
+  else if(y==2){if(x==0)thr=0.2500;else if(x==1)thr=0.7500;else if(x==2)thr=0.1250;else thr=0.6250;}
+  else{if(x==0)thr=1.0000;else if(x==1)thr=0.5000;else if(x==2)thr=0.8750;else thr=0.3750;}
+  thr-=0.5;col+=thr*(1.0/4.0);col=clamp(col-0.18,0.0,1.0);col=floor(col*3.0+0.5)/3.0;
+  gl_FragColor=vec4(col,1.0);
+}`;
+
+function mkShader(type,src){
+  const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))console.error(gl.getShaderInfoLog(s));
+  return s;
+}
+const prog=gl.createProgram();
+gl.attachShader(prog,mkShader(gl.VERTEX_SHADER,vsSrc));
+gl.attachShader(prog,mkShader(gl.FRAGMENT_SHADER,fsSrc));
+gl.linkProgram(prog);
+gl.useProgram(prog);
+const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+const posLoc=gl.getAttribLocation(prog,'pos');
+gl.enableVertexAttribArray(posLoc);gl.vertexAttribPointer(posLoc,2,gl.FLOAT,false,0,0);
+const uRes=gl.getUniformLocation(prog,'res');
+const uTime=gl.getUniformLocation(prog,'time');
+const uMouse=gl.getUniformLocation(prog,'mouse');
+const mouse={x:0,y:0};
+document.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
+const t0=performance.now();
+(function frame(){
+  const t=(performance.now()-t0)/1000;
+  gl.uniform2f(uRes,canvas.width,canvas.height);
+  gl.uniform1f(uTime,t);
+  gl.uniform2f(uMouse,mouse.x,mouse.y);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+  requestAnimationFrame(frame);
+})();
+
+// logics
+const g = id => document.getElementById(id);
+const v = el => el.value.trim();
+
+const f = {
+  username:g('username'),banner:g('banner'),subtitle:g('subtitle'),
+  bio:g('bio'),quote:g('quote'),
+  milestone:g('milestone'),mlink:g('mlink'),mimg:g('mimg'),
+  goals:g('goals'),
+  twitter:g('twitter'),linkedin:g('linkedin'),website:g('website'),
+  statsTheme:g('stats-theme'),footer:g('footer')
+};
+let skills=[];
+const extras={stats:true,streak:true,langs:true,trophy:false,views:false};
+let showRendered=false;
+
+function buildMd(){
+  const u=v(f.username),bn=v(f.banner),sub=v(f.subtitle);
+  const bio=v(f.bio),q=v(f.quote);
+  const m=v(f.milestone),ml=v(f.mlink),mi=v(f.mimg);
+  const goals=v(f.goals),ft=v(f.footer);
+  const tw=v(f.twitter),li=v(f.linkedin),ws=v(f.website);
+  const th=f.statsTheme.value;
+  let md='';
+  md+=`<div align="center">\n\n`;
+  if(bn)md+=`# ${bn}\n\n`;
+  else if(u)md+=`# Hey there 👋 I'm **${u}**\n\n`;
+  else md+=`# Hey there 👋\n\n`;
+  if(sub)md+=`### ${sub}\n\n`;
+  if(extras.views&&u)md+=`![Profile views](https://komarev.com/ghpvc/?username=${u}&color=22c55e&style=flat-square)\n\n`;
+  md+=`</div>\n\n---\n\n`;
+  if(bio){md+=`## 🧑‍💻 About Me\n\n${bio}\n\n`;if(q)md+=`> *${q}*\n\n`;}
+  if(m){
+    md+=`## 🏆 Milestones\n\n`;
+    if(mi)md+=`[![${m}](${mi})](${ml||'#'})\n\n`;
+    else md+=`**${m}**\n\n`;
+    if(ml&&!mi)md+=`🔗 [Verify Credential](${ml})\n\n`;
+  }
+  if(goals)md+=`## 🚀 Currently Working On\n\n${goals}\n\n`;
+  if(skills.length)md+=`## 🛠️ Tech Stack\n\n${skills.map(s=>`\`${s}\``).join('  ')}\n\n`;
+  const hasLinks=tw||li||ws;
+  if(hasLinks){
+    md+=`## 🌐 Connect With Me\n\n`;
+    if(ws)md+=`[![Website](https://img.shields.io/badge/Website-22c55e?style=flat-square&logo=Google-Chrome&logoColor=white)](${ws})  `;
+    if(tw){const h=tw.replace('@','');md+=`[![Twitter](https://img.shields.io/badge/@${h}-1DA1F2?style=flat-square&logo=twitter&logoColor=white)](https://twitter.com/${h})  `;}
+    if(li){const p=li.replace(/.*linkedin\.com\/in\//,'').replace(/\/$/,'');md+=`[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://linkedin.com/in/${p})`;}
+    md+=`\n\n`;
+  }
+  if(u&&(extras.stats||extras.streak||extras.langs||extras.trophy)){
+    md+=`## 📊 GitHub Stats\n\n<div align="center">\n\n`;
+    if(extras.stats)md+=`![GitHub Stats](https://github-readme-stats.vercel.app/api?username=${u}&show_icons=true&theme=${th}&hide_border=true&count_private=true)\n\n`;
+    if(extras.streak)md+=`![GitHub Streak](https://github-readme-streak-stats.herokuapp.com/?user=${u}&theme=${th}&hide_border=true)\n\n`;
+    if(extras.langs)md+=`![Top Languages](https://github-readme-stats.vercel.app/api/top-langs/?username=${u}&layout=compact&theme=${th}&hide_border=true)\n\n`;
+    if(extras.trophy)md+=`![Trophy](https://github-profile-trophy.vercel.app/?username=${u}&theme=${th}&no-frame=true&row=1)\n\n`;
+    md+=`</div>\n\n`;
+  }
+  if(ft)md+=`---\n\n<div align="center">\n\n*${ft}*\n\n</div>\n`;
+  return md;
+}
+
+function hl(md){
+  return md
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^(#{1,3} .+)$/gm,'<span class="mh">$1</span>')
+    .replace(/`([^`]+)`/g,'<span class="mc">`$1`</span>')
+    .replace(/\*\*([^*]+)\*\*/g,'<span class="mb">**$1**</span>')
+    .replace(/\*([^*]+)\*/g,'<em style="color:#86efac">*$1*</em>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<span class="ml">[$1]($2)</span>')
+    .replace(/^(>.+)$/gm,'<span class="mq">$1</span>')
+    .replace(/^---$/gm,'<span class="mhr">---</span>')
+    .replace(/^(!\[.+\]\(.+\))$/gm,'<span class="mimg">$1</span>');
+}
+
+function renderHtml(md){
+  return md
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,'<h1>$1</h1>')
+    .replace(/^> \*(.+)\*$/gm,'<blockquote>$1</blockquote>')
+    .replace(/^> (.+)$/gm,'<blockquote>$1</blockquote>')
+    .replace(/^---$/gm,'<hr>')
+    .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g,'<em>$1</em>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g,'<img src="$2" alt="$1" />')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank">$1</a>')
+    .replace(/^(.+)$/gm,line=>{
+      const t=line.trim();if(!t)return'';
+      if(/^<(h[1-3]|blockquote|hr|img|div|p)/.test(t))return line;
+      return`<p>${line}</p>`;
+    });
+}
+
+function update(){
+  const md=buildMd();
+  if(!showRendered){g('output').innerHTML=hl(md);}
+  else{g('rendered').innerHTML=renderHtml(md);}
+  g('quote-block').classList.toggle('off',!v(f.bio));
+  g('milestone-block').classList.toggle('off',!v(f.milestone));
+}
+
+Object.values(f).forEach(el=>el.addEventListener('input',update));
+
+document.querySelectorAll('.tog').forEach(t=>{
+  t.addEventListener('click',()=>{
+    const k=t.dataset.key;extras[k]=!extras[k];
+    t.classList.toggle('on',extras[k]);update();
+  });
+});
+
+const skillInput=g('skill-input');
+function addSkill(){
+  const val=skillInput.value.trim();
+  if(!val||skills.includes(val)){skillInput.value='';return;}
+  skills.push(val);skillInput.value='';renderTags();update();
+}
+function renderTags(){
+  g('tags').innerHTML=skills.map((s,i)=>`<span class="tag">${s}<button onclick="removeSkill(${i})" title="Remove">×</button></span>`).join('');
+}
+window.removeSkill=i=>{skills.splice(i,1);renderTags();update();};
+g('add-btn').addEventListener('click',addSkill);
+skillInput.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addSkill();}});
+
+const copyBtn=g('copy-btn');
+copyBtn.addEventListener('click',()=>{
+  navigator.clipboard.writeText(buildMd()).then(()=>{
+    copyBtn.textContent='✓ Copied!';copyBtn.classList.add('ok');
+    setTimeout(()=>{
+      copyBtn.innerHTML=`<svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H6z"/><path d="M2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1H2z"/></svg> Copy Markdown`;
+      copyBtn.classList.remove('ok');
+    },2000);
+  });
+});
+
+const toggleRenderBtn=g('toggle-render-btn');
+toggleRenderBtn.addEventListener('click',()=>{
+  showRendered=!showRendered;
+  document.querySelector('.preview-area').style.display=showRendered?'none':'block';
+  g('rendered-area').style.display=showRendered?'block':'none';
+  toggleRenderBtn.textContent=showRendered?'⬡ Markdown':'⬡ Rendered';
+  toggleRenderBtn.classList.toggle('active-view',showRendered);
+  update();
+});
+
+update();
+
+// cursor
+(function(){
+  const ring = document.getElementById('cursor-ring');
+  const dot  = document.getElementById('cursor-dot');
+  const trailCanvas = document.getElementById('cursor-trail');
+  const ctx = trailCanvas.getContext('2d');
+  trailCanvas.width  = window.innerWidth;
+  trailCanvas.height = window.innerHeight;
+  trailCanvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:9997;pointer-events:none';
+  window.addEventListener('resize',()=>{
+    trailCanvas.width=window.innerWidth;
+    trailCanvas.height=window.innerHeight;
+  });
+
+  let mx=window.innerWidth/2, my=window.innerHeight/2;
+  let rx=mx, ry=my;
+  const trail=[];
+  const MAX_TRAIL=28;
+
+  document.addEventListener('mousemove',e=>{
+    mx=e.clientX; my=e.clientY;
+    dot.style.left=mx+'px'; dot.style.top=my+'px';
+    trail.push({x:mx,y:my,age:0});
+    if(trail.length>MAX_TRAIL) trail.shift();
+  });
+
+  document.querySelectorAll('a,button,input,textarea,select,.tog,.theme-card,.add-btn,.action-btn').forEach(el=>{
+    el.addEventListener('mouseenter',()=>document.body.classList.add('cursor-hover'));
+    el.addEventListener('mouseleave',()=>document.body.classList.remove('cursor-hover'));
+  });
+  document.addEventListener('mousedown',()=>document.body.classList.add('cursor-click'));
+  document.addEventListener('mouseup',()=>document.body.classList.remove('cursor-click'));
+
+  function lerp(a,b,t){return a+(b-a)*t;}
+
+  (function animCursor(){
+    rx=lerp(rx,mx,0.12);
+    ry=lerp(ry,my,0.12);
+    ring.style.left=rx+'px';
+    ring.style.top=ry+'px';
+
+    // tail
+    ctx.clearRect(0,0,trailCanvas.width,trailCanvas.height);
+    for(let i=1;i<trail.length;i++){
+      const t=i/trail.length;
+      const alpha=t*0.55;
+      const width=t*3.5;
+      ctx.beginPath();
+      ctx.moveTo(trail[i-1].x,trail[i-1].y);
+      ctx.lineTo(trail[i].x,trail[i].y);
+      ctx.strokeStyle=`rgba(34,197,94,${alpha})`;
+      ctx.lineWidth=width;
+      ctx.lineCap='round';
+      ctx.stroke();
+    }
+    // Glow dot at head
+    if(trail.length>0){
+      const head=trail[trail.length-1];
+      const grd=ctx.createRadialGradient(head.x,head.y,0,head.x,head.y,14);
+      grd.addColorStop(0,'rgba(74,222,128,0.25)');
+      grd.addColorStop(1,'rgba(34,197,94,0)');
+      ctx.beginPath();
+      ctx.arc(head.x,head.y,14,0,Math.PI*2);
+      ctx.fillStyle=grd;
+      ctx.fill();
+    }
+
+    requestAnimationFrame(animCursor);
+  })();
+})();
+
+// legals
+const LEGAL = {
+  tos: {
+    title: 'Terms of Service',
+    body: `
+      <h3>1. Acceptance</h3>
+      <p>By using Githipedia ("the Tool"), you agree to these Terms of Service. If you do not agree, please discontinue use immediately.</p>
+      <h3>2. Description</h3>
+      <p>Githipedia is a free, browser-based README generator. It runs entirely in your browser — no data is transmitted to any server. All content you enter stays on your device.</p>
+      <h3>3. Use of the Tool</h3>
+      <ul>
+        <li>You may use the generated README content freely for personal or commercial projects.</li>
+        <li>You may not redistribute the Githipedia tool itself as a commercial product without permission.</li>
+        <li>You are solely responsible for the content of any README you produce.</li>
+      </ul>
+      <h3>4. Third-Party Services</h3>
+      <p>The generated README may include links to third-party services such as <a href="https://github-readme-stats.vercel.app" target="_blank">github-readme-stats</a>, streak stats, and shields.io. These services are not affiliated with Githipedia and are governed by their own terms.</p>
+      <h3>5. Disclaimer of Warranties</h3>
+      <p>The Tool is provided "as is" without warranty of any kind. We make no guarantees that generated READMEs will render correctly on all platforms or that third-party stat services will remain available.</p>
+      <h3>6. Limitation of Liability</h3>
+      <p>To the maximum extent permitted by law, Githipedia and its creators shall not be liable for any indirect, incidental, or consequential damages arising from your use of the Tool.</p>
+      <h3>7. Changes</h3>
+      <p>These terms may be updated at any time. Continued use of the Tool constitutes acceptance of any revised terms.</p>
+      <h3>8. Contact</h3>
+      <p>For questions regarding these terms, please open an issue on the project repository.</p>
+    `
+  },
+  privacy: {
+    title: 'Privacy Policy',
+    body: `
+      <h3>Our Commitment</h3>
+      <p>Githipedia is built with privacy by design. We do not collect, store, or transmit any personal data.</p>
+      <h3>Data Processing</h3>
+      <p>Everything you type into Githipedia — your username, bio, skills, links — is processed exclusively in your browser's memory. Nothing leaves your device.</p>
+      <h3>Local Storage</h3>
+      <p>Githipedia does not use cookies, localStorage, or any persistent storage mechanism. Your data is gone when you close the tab.</p>
+      <h3>Third-Party Requests</h3>
+      <p>When you view the rendered preview, badge images and GitHub stat cards are fetched directly from third-party CDNs (shields.io, vercel.app, etc.) by your browser. Those services may log your IP address per their own privacy policies.</p>
+      <h3>Google Fonts</h3>
+      <p>Githipedia loads JetBrains Mono and Inter from Google Fonts. This request is made by your browser to Google's servers. See <a href="https://policies.google.com/privacy" target="_blank">Google's Privacy Policy</a> for details.</p>
+      <h3>Analytics</h3>
+      <p>We run no analytics, trackers, or telemetry of any kind.</p>
+      <h3>Children's Privacy</h3>
+      <p>Githipedia does not knowingly collect any information from children under 13.</p>
+      <h3>Contact</h3>
+      <p>Privacy questions? Open an issue on the project repository.</p>
+    `
+  },
+  licenses: {
+    title: 'Open Source Licenses',
+    body: `
+      <h3>Githipedia</h3>
+      <p>Released under the <strong style="color:var(--accent)">MIT License</strong>. You are free to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the software.</p>
+      <h3>WebGL Background</h3>
+      <p>The animated noise background uses a classic Perlin/FBM noise implementation adapted from open GLSL sources. See <a href="https://github.com/stegu/webgl-noise" target="_blank">stegu/webgl-noise</a> (MIT).</p>
+      <h3>JetBrains Mono</h3>
+      <p>Font by JetBrains, licensed under the <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache License 2.0</a>.</p>
+      <h3>Inter</h3>
+      <p>Font by Rasmus Andersson, licensed under the <a href="https://scripts.sil.org/OFL" target="_blank">SIL Open Font License 1.1</a>.</p>
+      <h3>Third-Party Stats Services</h3>
+      <ul>
+        <li><a href="https://github.com/anuraghazra/github-readme-stats" target="_blank">github-readme-stats</a> — MIT License</li>
+        <li><a href="https://github.com/DenverCoder1/github-readme-streak-stats" target="_blank">github-readme-streak-stats</a> — MIT License</li>
+        <li><a href="https://shields.io" target="_blank">shields.io</a> — CC0 1.0</li>
+        <li><a href="https://github.com/ryo-ma/github-profile-trophy" target="_blank">github-profile-trophy</a> — MIT License</li>
+      </ul>
+      <h3>Full MIT License Text</h3>
+      <p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.</p>
+    `
+  },
+  about: {
+    title: 'About Githipedia',
+    body: `
+      <h3>What is Githipedia?</h3>
+      <p>Githipedia is a free, open-source GitHub README generator. Fill in the form, get a polished Markdown README — no sign-up, no server, no nonsense.</p>
+      <h3>Features</h3>
+      <ul>
+        <li>Live Markdown preview with syntax highlighting</li>
+        <li>Rendered HTML preview mode</li>
+        <li>GitHub Stats, Streaks, Top Languages & Trophy integrations</li>
+        <li>Auto-generated shields.io social badges</li>
+        <li>8 stats card themes</li>
+        <li>WebGL animated background with mouse interaction</li>
+        <li>Custom green cursor with trail effect</li>
+        <li>100% client-side — your data never leaves your browser</li>
+      </ul>
+      <h3>Tech Stack</h3>
+      <ul>
+        <li>Vanilla HTML, CSS & JavaScript — zero dependencies</li>
+        <li>WebGL with GLSL fragment shaders for the background</li>
+        <li>Google Fonts (JetBrains Mono, Inter)</li>
+      </ul>
+      <h3>Contributing</h3>
+      <p>Contributions, bug reports, and feature requests are welcome. Open an issue or pull request on the project repository.</p>
+      <h3>Version</h3>
+      <p style="font-family:var(--mono);color:var(--accent)">Githipedia v2.0.0 — README Wizard</p>
+    `
+  }
+};
+
+function openModal(key) {
+  const data = LEGAL[key];
+  if (!data) return;
+  document.getElementById('modal-title').textContent = data.title;
+  document.getElementById('modal-body').innerHTML = data.body;
+  document.getElementById('legal-modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('legal-modal').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+</script>
+</body>
+</html>
